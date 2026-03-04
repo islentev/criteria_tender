@@ -110,7 +110,7 @@ with col2:
                     
                     # Исправленный вызов API
                     response = client.chat.completions.create(
-                        model="google/gemini-flash-1.5",
+                        model="anthropic/claude-3.5-sonnet",
                         messages=[{"role": "user", "content": prompt}]
                     )
                     
