@@ -28,7 +28,7 @@ def extract_text_from_docx(file):
 
 def load_law_context():
     laws_text = ""
-    for law_file in ["44fz.pdf", "pp2604.pdf"]:
+    for law_file in ["fz44.docx", "pp2604.rtf"]:
         if os.path.exists(law_file):
             try:
                 reader = PdfReader(law_file)
