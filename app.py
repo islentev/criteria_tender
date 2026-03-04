@@ -28,14 +28,13 @@ def extract_text_from_docx(file):
 
 def load_law_context():
     laws_text = ""
-    for law_file in ["fz44.docx", "pp2604.rtf"]:
+    for law_file in ["44fz.txt", "pp2604.txt"]:
         if os.path.exists(law_file):
             try:
-                reader = PdfReader(law_file)
-                for page in reader.pages[:50]:
-                    laws_text += page.extract_text() or ""
-            except:
-                continue
+                with open(law_file, "r", encoding="utf-8") as f:
+                    laws_text += f"\n[ДАННЫЕ ИЗ {law_file}]:\n" + f.read()
+            except Exception as e:
+                st.sidebar.error(f"Ошибка чтения {law_file}: {e}")
     return laws_text
 
 def create_docx(report_text):
