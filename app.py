@@ -1,9 +1,14 @@
 import streamlit as st
-import google.generativeai as genai
+from openai import OpenAI # Используем универсальный клиент
 from PyPDF2 import PdfReader
 from docx import Document
 import io
 import os
+
+client = OpenAI(
+  base_url="https://openrouter.ai/api/v1",
+  api_key=st.secrets["OPENROUTER_API_KEY"],
+)
 
 # --- НАСТРОЙКИ СТРАНИЦЫ ---
 st.set_page_config(page_title="Tender Auditor AI", layout="wide")
@@ -76,11 +81,8 @@ with col2:
         if not input_text:
             st.warning("Пожалуйста, предоставьте текст для анализа.")
         else:
-            with st.spinner("ИИ анализирует законодательство и ваши критерии..."):
+            with st.spinner("OpenRouter связывается с Gemini..."):
                 try:
-                    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    
                     legal_context = load_law_context()
                     
                     prompt = f"""
@@ -103,8 +105,9 @@ with col2:
                     Отвечай на русском языке.
                     """
                     
-                    response = model.generate_content(prompt)
-                    report_content = response.text
+                    response = client.chat.completions.create(
+                      model="google/gemini-flash-1.5", 
+                    report_content = response.choices[0].message.content
                     
                     # 1. Вывод отчета в окно
                     st.markdown(report_content)
