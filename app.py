@@ -121,5 +121,5 @@ with col2:
                 except Exception as e:
                     st.error(f"Произошла ошибка: {e}")
         st.markdown(response.text)
-            except Exception as e:
+                except Exception as e:
                 st.error(f"Ошибка: {e}")
