@@ -1,90 +1,93 @@
 import streamlit as st
-from openai import OpenAI # Используем универсальный клиент
+from openai import OpenAI
 from PyPDF2 import PdfReader
 from docx import Document
 import io
 import os
 
+# --- КОНФИГУРАЦИЯ СТРАНИЦЫ (В стиле твоего первого кода) ---
+st.set_page_config(page_title="Тендерный Аналитик 2604", layout="wide")
+
+# --- ПОДКЛЮЧЕНИЕ OPENROUTER ---
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
   api_key=st.secrets["OPENROUTER_API_KEY"],
 )
 
-# --- НАСТРОЙКИ СТРАНИЦЫ ---
-st.set_page_config(page_title="Tender Auditor AI", layout="wide")
+# --- ФУНКЦИИ ПАРСИНГА ---
+def extract_text_from_pdf(file):
+    pdf_reader = PdfReader(file)
+    text = ""
+    for page in pdf_reader.pages:
+        text += page.extract_text() or ""
+    return text
 
-# --- ФУНКЦИИ ОБРАБОТКИ ТЕКСТА ---
-def get_text_from_file(uploaded_file):
-    if uploaded_file.name.endswith(".pdf"):
-        reader = PdfReader(uploaded_file)
-        return "".join([page.extract_text() or "" for page in reader.pages])
-    elif uploaded_file.name.endswith(".docx"):
-        doc = Document(uploaded_file)
-        return "\n".join([p.text for p in doc.paragraphs])
-    return None
+def extract_text_from_docx(file):
+    doc = Document(file)
+    return "\n".join([para.text for para in doc.paragraphs])
 
 def load_law_context():
     laws_text = ""
-    # Ищем файлы в корне репозитория (важно: загрузите их на GitHub как .pdf или .txt)
     for law_file in ["44fz.pdf", "pp2604.pdf"]:
         if os.path.exists(law_file):
             try:
                 reader = PdfReader(law_file)
-                laws_text += f"\n[ДАННЫЕ ИЗ {law_file}]:\n"
-                # Берем ключевые страницы (например, первые 50), чтобы не перегружать контекст
                 for page in reader.pages[:50]:
                     laws_text += page.extract_text() or ""
-            except Exception as e:
-                st.sidebar.error(f"Ошибка загрузки {law_file}: {e}")
+            except:
+                continue
     return laws_text
 
 def create_docx(report_text):
     doc = Document()
-    doc.add_heading('Отчет об аудите тендерной документации', 0)
+    doc.add_heading('Отчет об аудите критериев (44-ФЗ / ПП 2604)', 0)
     doc.add_paragraph(report_text)
     bio = io.BytesIO()
     doc.save(bio)
     return bio.getvalue()
 
-# --- АВТОРИЗАЦИЯ ---
+# --- САЙДБАР С ПАРОЛЕМ (Как в первом коде) ---
 with st.sidebar:
     st.title("🔐 Доступ")
-    pwd = st.text_input("Пароль", type="password")
-    if pwd != st.secrets["APP_PASSWORD"]:
-        st.error("Введите верный пароль")
+    password = st.text_input("Введите пароль", type="password")
+    if password != st.secrets["APP_PASSWORD"]:
+        st.error("Доступ ограничен")
         st.stop()
-    
     st.success("Доступ разрешен")
     st.divider()
-    st.info("Приложение сверяет критерии заказчика с 44-ФЗ и ПП РФ № 2604.")
+    st.info("Анализ на базе 44-ФЗ и ПП РФ № 2604")
 
-# --- ИНТЕРФЕЙС ---
-st.title("🚀 AI-Аналитик: Проверка законности критериев")
+# --- ИНТЕРФЕЙС (Возвращаем 1-й вариант: Колонки и Радио-кнопки) ---
+st.title("🚀 Анализ критериев ЕИС на законность")
 
 col1, col2 = st.columns([1, 1])
 
 with col1:
-    st.subheader("Ввод данных")
-    source = st.radio("Как передать критерии?", ["Загрузить файл", "Вставить текст"])
-    
+    option = st.radio("Способ загрузки:", ("Текст", "Документ (PDF/Docx)"))
     input_text = ""
-    if source == "Загрузить файл":
-        file = st.file_uploader("Выберите PDF или DOCX", type=["pdf", "docx"])
-        if file:
-            input_text = get_text_from_file(file)
+    
+    if option == "Текст":
+        input_text = st.text_area("Вставьте текст критериев здесь...", height=400)
     else:
-        input_text = st.text_area("Вставьте текст критериев оценки из ЕИС...", height=300)
+        uploaded_file = st.file_uploader("Загрузите файл с критериями", type=["pdf", "docx"])
+        if uploaded_file:
+            if uploaded_file.name.endswith(".pdf"):
+                input_text = extract_text_from_pdf(uploaded_file)
+            else:
+                input_text = extract_text_from_docx(uploaded_file)
+            st.success("Текст извлечен!")
 
 with col2:
     st.subheader("Результат анализа")
-    if st.button("⚖️ Проверить на нарушения"):
+    if st.button("⚖️ Проверить на нарушения", use_container_width=True):
         if not input_text:
-            st.warning("Пожалуйста, предоставьте текст для анализа.")
+            st.warning("Сначала введите данные!")
         else:
-            with st.spinner("OpenRouter связывается с Gemini..."):
+            with st.spinner("OpenRouter связывается с Gemini и сверяет законы..."):
                 try:
                     legal_context = load_law_context()
                     
+                    # --- ТВОЙ ПРОМТ (БЕЗ ИЗМЕНЕНИЙ) ---
                     prompt = f"""
                     Ты — ведущий эксперт по тендерному праву. Сравни критерии заказчика с законом.
                     
@@ -105,8 +108,12 @@ with col2:
                     Отвечай на русском языке.
                     """
                     
+                    # Исправленный вызов API
                     response = client.chat.completions.create(
-                      model="google/gemini-flash-1.5", 
+                        model="google/gemini-flash-1.5",
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+                    
                     report_content = response.choices[0].message.content
                     
                     # 1. Вывод отчета в окно
@@ -119,8 +126,11 @@ with col2:
                         label="📄 Скачать отчет в Word (.docx)",
                         data=docx_file,
                         file_name="Audit_Report.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
                     )
                 except Exception as e:
                     st.error(f"Произошла ошибка: {e}")
-       
+
+st.divider()
+st.caption("Тендерный отдел | Анализ на основе ИИ")
