@@ -11,6 +11,36 @@ if "input_content" not in st.session_state:
 if "file_key" not in st.session_state:
     st.session_state["file_key"] = 0
 
+# --- ФУНКЦИИ ПАРСИНГА (Должны быть вверху) ---
+def extract_text_from_pdf(file):
+    try:
+        pdf_reader = PdfReader(file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() or ""
+        return text
+    except Exception as e:
+        return f"Ошибка при чтении PDF: {e}"
+
+def extract_text_from_docx(file):
+    try:
+        doc = Document(file)
+        return "\n".join([para.text for para in doc.paragraphs])
+    except Exception as e:
+        return f"Ошибка при чтении DOCX: {e}"
+
+def load_law_context():
+    laws_text = ""
+    # Мы ищем .txt файлы, так как они надежнее для ИИ
+    for law_file in ["44fz.txt", "pp2604.txt"]:
+        if os.path.exists(law_file):
+            try:
+                with open(law_file, "r", encoding="utf-8") as f:
+                    laws_text += f"\n[ДАННЫЕ ИЗ {law_file}]:\n" + f.read()
+            except:
+                continue
+    return laws_text
+    
 def reset_app():
     # Очищаем напрямую содержимое виджета по его ключу
     st.session_state["main_text_area"] = "" 
