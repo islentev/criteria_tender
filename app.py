@@ -98,18 +98,31 @@ with col1:
         st.session_state["input_content"] = input_text
     else:
         # file_key меняется при нажатии "Очистить", и загрузчик обнуляется
-        uploaded_file = st.file_uploader(
-            "Загрузите файл с критериями", 
+        uploaded_files = st.file_uploader(
+            "Загрузите файлы с критериями (до 10 шт.)", 
             type=["pdf", "docx"],
+            accept_multiple_files=True,
             key=f"uploader_{st.session_state['file_key']}"
         )
+        
         input_text = ""
-        if uploaded_file:
-            if uploaded_file.name.endswith(".pdf"):
-                input_text = extract_text_from_pdf(uploaded_file)
+        
+        if uploaded_files:
+            if len(uploaded_files) > 10:
+                st.error("Максимальное количество файлов — 10. Пожалуйста, удалите лишние.")
             else:
-                input_text = extract_text_from_docx(uploaded_file)
-            st.success("Текст извлечен!")
+                combined_text = []
+                for file in uploaded_files:
+                    if file.name.endswith(".pdf"):
+                        text = extract_text_from_pdf(file)
+                    else:
+                        text = extract_text_from_docx(file)
+                    
+                    # Добавляем разделитель, чтобы ИИ понимал, где кончается один файл и начинается другой
+                    combined_text.append(f"--- СОДЕРЖИМОЕ ФАЙЛА {file.name} ---\n{text}")
+                
+                input_text = "\n\n".join(combined_text)
+                st.success(f"Текст извлечен из {len(uploaded_files)} файл(ов)!")
 with col2:
     st.subheader("Результат анализа")
     if st.button("⚖️ Проверить на нарушения", use_container_width=True):
