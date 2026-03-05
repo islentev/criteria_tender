@@ -12,14 +12,14 @@ if "file_key" not in st.session_state:
     st.session_state["file_key"] = 0
 
 def reset_app():
-    # Очищаем текстовое поле
-    st.session_state["input_content"] = ""
-    # Меняем ключ загрузчика, чтобы он "забыл" файл
+    # Очищаем напрямую содержимое виджета по его ключу
+    st.session_state["main_text_area"] = "" 
+    st.session_state["input_text"] = ""
+    # Меняем ключ загрузчика файлов
     st.session_state["file_key"] += 1
-    # Полная очистка кэша функций
+    # Очистка кэша
     st.cache_data.clear()
-    st.cache_resource.clear()
-    # Перезагрузка страницы
+    # Принудительный реран
     st.rerun()
 
 # --- КОНФИГУРАЦИЯ ---
