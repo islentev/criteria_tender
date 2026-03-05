@@ -5,6 +5,11 @@ from docx import Document
 import io
 import os
 
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=st.secrets["OPENROUTER_API_KEY"],
+)
+
 # --- ИНИЦИАЛИЗАЦИЯ СОСТОЯНИЯ (Кэш и поля) ---
 if "input_content" not in st.session_state:
     st.session_state["input_content"] = ""
