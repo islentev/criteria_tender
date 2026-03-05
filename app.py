@@ -122,7 +122,10 @@ with col1:
             else:
                 combined_text = []
                 for i, file in enumerate(uploaded_files, 1):
-                    # ... извлечение текста ...
+                    if file.name.endswith(".pdf"):
+                        text = extract_text_from_pdf(file)
+                    else:
+                        text = extract_text_from_docx(file)
                     combined_text.append(
                         f"=== ДОКУМЕНТ {i} НАЧАЛО ===\n{text}\n=== ДОКУМЕНТ {i} КОНЕЦ ==="
                     )
