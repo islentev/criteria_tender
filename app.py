@@ -47,15 +47,19 @@ def load_law_context():
     return laws_text
     
 def reset_app():
-    # Очищаем напрямую содержимое виджета по его ключу
     st.session_state["main_text_area"] = "" 
-    st.session_state["input_text"] = ""
-    # Меняем ключ загрузчика файлов
+    st.session_state["input_content"] = "" # Было input_text, стало content
     st.session_state["file_key"] += 1
-    # Очистка кэша
     st.cache_data.clear()
-    # Принудительный реран
     st.rerun()
+
+def create_docx(report_text):
+    doc = Document()
+    doc.add_heading('Отчет об аудите критериев', 0)
+    doc.add_paragraph(report_text)
+    bio = io.BytesIO()
+    doc.save(bio)
+    return bio.getvalue()
 
 # --- КОНФИГУРАЦИЯ ---
 st.set_page_config(page_title="Тендерный Аналитик 2604", layout="wide")
@@ -84,13 +88,13 @@ with col1:
     option = st.radio("Способ загрузки:", ("Текст", "Документ (PDF/Docx)"))
     
     if option == "Текст":
-        # Используем session_state для управления текстом
+        # Убираем параметр value, используем только key для прямой связи с session_state
         input_text = st.text_area(
             "Вставьте текст критериев здесь...", 
-            value=st.session_state["input_content"], 
             height=400,
             key="main_text_area"
         )
+        # Синхронизируем для логики очистки
         st.session_state["input_content"] = input_text
     else:
         # file_key меняется при нажатии "Очистить", и загрузчик обнуляется
